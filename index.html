@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Hrts</title>
+</head>
+
+<style type="text/css">
+html, body {
+	font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+	font-size: 16px;
+	background: #fff;
+	color: #111;
+	margin: 0;
+}
+
+h1, h2 {
+	font-weight: 100;
+}
+
+h2 {
+	margin-top: 3em;
+}
+
+a, a:visited {
+	color:  #6bc048;
+	text-decoration: none;
+}
+
+a:hover, a:active {
+	color: #c41949;
+	text-decoration: underline;
+}
+
+img {
+    max-height: 10vh;
+    display: block;
+	position: fixed;
+	bottom: 2em;
+	right: 2em;
+}
+
+.wrap {
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 1em;
+}
+
+pre {
+    background: #eee;
+    font-size: 90%;
+    white-space: pre;
+    user-select: text;
+    max-height: 500px;
+    overflow: auto;
+    padding-left: 1em;
+    font-size: 80%;
+    tab-size: 4;
+}
+
+ul#opts li {
+    margin-top: 1em
+}
+
+span#hrtsbuild {
+	font-family: monospace;
+	font-weight: bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="wrap">
+
+<script>
+window.HrtsReady = [];
+</script>
+
+<h1>Hrts</h1>
+<p>
+Hrts is a small (&lt; 10 kB gzipped) chart library designed for real-time time-series plotting.
+
+The emphasis is on streaming data, and precision; the library maintains its own timing and animation is de-coupled. New data are aggregated 
+and inserted into the time series as required. There is no anti-aliasing or interpolation. Plot points are mapped directly to pixels. 
+</p>
+
+
+
+<div class="chart" id="chart2"></div>
+
+<script>
+HrtsReady.push(function () {
+	var chart = Hrts.create("chart2", 3, {range: 10, xaxis: 'zero'});
+	var i = 0;
+	
+	chart.callback = function () {
+		i++;
+		var v = Math.cos(i/30 * Math.PI*2) * 900;
+		var v2 = Math.cos((i+15)/60 * Math.PI*2) * 900;
+		var v3 = Math.cos(i/15 * Math.PI*2) * 900;
+		chart.update(v, v2, v3);
+	};
+});
+</script>
+
+
+<h2>Get started</h2>
+
+<p></p>
+
+<pre><code>
+&lt;script src="https://ttlx.me/hrts/dist/hrts.min.js"&gt;&lt;/script&gt;
+
+&lt;div id="chart"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+var chart = Hrts.create("chart");
+
+var i = 0;
+window.setInterval(function () {
+	i++;
+	var v = Math.cos(i/30 * Math.PI*2) * 50;
+	
+	chart.update(v);
+}, 100);
+
+&lt;/script&gt;
+
+</code></pre>
+
+<p>Or for an asynchronous version:</p>
+
+<pre><code>
+&lt;div id="chart"&gt;&lt;/div&gt;
+
+&lt;script&gt;
+window["HrtsReady"] = function () {
+	var chart = Hrts.create("chart");
+	
+	...
+};
+&lt;/script&gt;
+
+&lt;script src="https://ttlx.me/hrts/dist/hrts.min.js" async&gt;&lt;/script&gt;
+
+</code></pre>
+
+<h2>Examples</h2>
+
+<p>
+Initialise the chart with historical data:
+</p>
+
+<pre><code>
+Hrts.create("chart", datatable, options)
+
+</code></pre>
+
+<p>
+The <code>datatable</code> is a JS array of arrays of the form <code>[timestamps, series1, series2...]</code>. 
+The <code>timestamps</code> array contains offsets in seconds from the current time. For example: 
+</p>
+
+<pre><code>
+var table = [
+	[8, 6, 5.5, 5, 4, 2, 0],
+	[30, 25, 20, 15, 10, 5, 0],
+	[20, 15, 10, 5, 10, 15, 20],
+];
+
+Hrts.create("chart5", table).stop();
+	
+</code></pre>
+
+<p>...creates the chart:</p>
+
+<div class="chart" id="chart5"></div>
+
+<script>
+
+HrtsReady.push(function () {
+
+	var table = [
+		[8, 6, 5.5, 5, 4, 2, 0],
+		[30, 25, 20, 15, 10, 5, 0],
+		[20, 15, 10, 5, 10, 15, 20],
+	];
+
+	Hrts.create("chart5", table).stop();
+});
+	
+</script>
+
+
+
+<p>
+You can load historical datasets of any length.
+</p>
+
+
+<div class="chart" id="chart3"></div>
+
+<script>
+var xhr = new XMLHttpRequest();
+
+xhr.onreadystatechange = function (r) {
+	if (xhr.readyState !== 4 || xhr.status !== 200) {
+		return;
+	}
+	
+	//var $sel = document.getElementById("c3range");
+	
+	var data = JSON.parse(xhr.responseText);
+
+	var cb = function () {
+		var chart = Hrts.create("chart3", [data['times'], data['temp0']], {
+			ytruncate: true, 
+			draw: ['line']
+		});
+		
+		/*
+		[3600, 86400, 86400*7, 86400*30].forEach(function (v) {
+			var $opt = document.createElement("option");
+			$opt.value = v;
+			$opt.textContent = v;
+			$sel.appendChild($opt);
+		});
+		
+		$sel.onchange = function () {
+			chart.setup({range: $sel.options[$sel.selectedIndex].value*1});
+		}
+		*/
+		
+	}
+	
+	if (Hrts) {
+		cb();
+	}
+	else {
+		HrtsReady.push(cb);
+	}
+}
+xhr.open('GET', '../sysmon/sysmon.php?token=zL9C6gdRpYFS6CLX&mode=history&scale=4');
+xhr.send();
+	
+</script>
+
+<p>
+Multiple series are stacked by default: 
+</p>
+
+<div class="chart" id="chart4" style="height: 300px"></div>
+
+<script>
+var xhr2 = new XMLHttpRequest();
+xhr2.onreadystatechange = function (r) {
+	if (xhr2.readyState !== 4 || xhr2.status !== 200) {
+		return;
+	}
+	
+	var data = JSON.parse(xhr2.responseText);
+
+	var cb = function () {
+		Hrts.create("chart4", [data['times'], data['mem_used_bytes'], data['mem_shared_bytes'], data['mem_free_bytes'], data['mem_buffcache_bytes']], {
+			title: 'Memory',
+			labels: ['Used', 'Shared', 'Free', 'Buff/Cache'],
+			unit: 'b',
+			ymax: 'max',
+		});
+	}
+	
+	if (Hrts) {
+		cb();
+	}
+	else {
+		HrtsReady.push(cb);
+	}
+}
+xhr2.open('GET', '../sysmon/sysmon.php?token=zL9C6gdRpYFS6CLX&mode=history&scale=2');
+xhr2.send();
+	
+</script>
+
+
+<h2>Options reference</h2>
+
+<p>
+This is auto-generated from the Hrts source itself. The documentation corresponds to 
+Hrts build: <span id="hrtsbuild"></span>
+</p>
+
+<ul id="opts">
+</ul>
+
+<script>
+HrtsReady.push(function () {
+	var $opts = document.getElementById("opts");
+	var opts = Hrts.help();
+	
+	document.getElementById("hrtsbuild").textContent =  HRTS_BUILD;
+	
+	for (var o in opts) {
+		var $opt = document.createElement("li");
+		
+		var def = Hrts.options[o];
+		
+		$opt.innerHTML = '<b>'+o+'</b>: '+opts[o]+'<br>Default: <i>'+def+'</i>';
+	
+		$opts.appendChild($opt);
+	}
+	
+	document.querySelectorAll("code").forEach(function (x) {
+		x.innerHTML = x.innerHTML.replace(/dist\/hrts.min.js/, 'dist/hrts-'+HRTS_BUILD+'.min.js');
+	});
+});
+</script>
+
+
+<!--
+<p>
+
+</p>
+
+<div class="chart" id="chart1"></div>
+
+<script>
+
+		// Colorbrewer red-yellow
+		//seriesColors: ['#bd0026cc', '#f03b20cc', '#fd8d3ccc', '#fecc5ccc', '#ffffb2cc', '#0f0'],
+		//seriesColors: ['#355c7d', '#6c5b7b', '#c06c84', '#f67280']
+		// BuGnYl seriesColors: ['#0c2c84cc', '#225ea8cc', '#1d91c0cc', '#41b6c4cc', '#7fcdbbcc', '#c7e9b4cc', '#ffffcccc']
+		//seriesColors: ['#006837','#31a354','#78c679','#c2e699','#ffffcc', '#f00']
+		// Colorbrewer qualitative
+		//seriesColors: ['#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462']
+
+HrtsReady.push(function () {
+	var chart = Hrts.create("chart1");
+	
+	window.addEventListener("scroll", function () {
+	
+		chart.update(document.scrollingElement.scrollTop);
+	}, {passive: true});
+});
+</script>
+-->
+
+
+
+</div>
+
+<script src="dist/hrts-20200506110807.min.js" async></script>
+
+</body>
+</html>
